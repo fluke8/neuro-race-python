@@ -88,6 +88,7 @@ class ticTacToe():
         if check_winner(self.state, 2):
             done = True
             reward = 1
+        
 
         state_for_robots = scaler.transform(self.state)
         
@@ -181,11 +182,12 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
 
             if steps%2==0:
                 action = select_action(net1, state)
-                
+                reward2 = 0
                 next_state, reward, done = env.step1(action)
                 if done:
                     if reward > 0:
                         num_of_wins1 += 1
+                        reward2 = -1
                     elif reward < 0:
                         num_of_errors1 += 1
                     elif reward == 0:
@@ -200,6 +202,7 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
                 if done:
                     if reward > 0:
                         num_of_wins2 += 1
+                        episode_actions_net1[len(episode_actions_net1)-1] = -1
                     elif reward < 0:
                         num_of_errors2 += 1
                     elif reward == 0:
@@ -207,7 +210,11 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
 
                 episode_states_net2.append(state)
                 episode_actions_net2.append(action)
-                episode_rewards_net2.append(reward)
+                if reward2!=0:
+                    episode_rewards_net2.append(reward2)
+                else:
+                    episode_rewards_net2.append(reward)
+
             
             steps += 1
 
@@ -215,7 +222,7 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
             
             if done:
                 break
-        print(episode_rewards_net1, episode_rewards_net2)
+        
         optimize(net1, optimizer1, episode_states_net1, episode_actions_net1, episode_rewards_net1)
 
         optimize(net2, optimizer2, episode_states_net2, episode_actions_net2, episode_rewards_net2)
@@ -262,7 +269,6 @@ def test2(net, num_episodes=10):
             if step%2 == 0:
                 action = select_action(net, state)
                 next_state, reward, done = env.step1(action)
-                
                 if reward < 0:
                     print('Робот ошибся')
                 elif reward > 0:
@@ -295,18 +301,18 @@ env = ticTacToe()
 
 scaler.fit([[1,2,0], [0,2,0], [1,0,2]])
 
-episodes = 1000000
+episodes = 10000
 
 input_size = env.input_size
 output_size = env.output_size
 
 hidden_size1_1 = 9
 
-hidden_size1_2 = 256
-hidden_size2_2 = 128
+hidden_size1_2 = 128
+hidden_size2_2 = 64
 hidden_size3_2 = 64
 
-learning_rate = 0.0001
+learning_rate = 0.001
 gamma = 0.99
 
 net1 = PolicyNetwork2(input_size, hidden_size1_2, hidden_size2_2, hidden_size3_2, output_size)
