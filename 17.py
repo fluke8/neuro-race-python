@@ -53,7 +53,7 @@ class ticTacToe():
             self.state[row][col] = 1
         else:
             done = True
-            reward = -1  
+            reward = -5 
 
         if not(np.isin(0, np.array(self.state))):
             done = True
@@ -79,7 +79,7 @@ class ticTacToe():
             self.state[row][col] = 2
         else:
             done = True
-            reward = -1  
+            reward = -5  
 
         if not(np.isin(0, np.array(self.state))):
             done = True
@@ -117,7 +117,7 @@ class PolicyNetwork2(nn.Module):
         self.fc1 = nn.Linear(input_size, hidden_size1)
         self.fc2 = nn.Linear(hidden_size1, hidden_size2)
         self.fc3 = nn.Linear(hidden_size2, hidden_size3)
-        self.fc4 = nn.Linear(hidden_size3, output_size)
+        self.fc4 = nn.Linear(hidden_size1, output_size)
     
     def forward(self, x):
         x = torch.relu(self.fc1(x))
@@ -182,12 +182,12 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
 
             if steps%2==0:
                 action = select_action(net1, state)
-                reward2 = 0
                 next_state, reward, done = env.step1(action)
                 if done:
                     if reward > 0:
                         num_of_wins1 += 1
-                        reward2 = -1
+                        episode_rewards_net2[len(episode_rewards_net2)-1] = -1
+                        print('1 сеть выиграла')
                     elif reward < 0:
                         num_of_errors1 += 1
                     elif reward == 0:
@@ -196,13 +196,15 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
                 episode_states_net1.append(state)
                 episode_actions_net1.append(action)
                 episode_rewards_net1.append(reward)
+
+
             else:
                 action = select_action(net2, state)
                 next_state, reward, done = env.step2(action)
                 if done:
                     if reward > 0:
                         num_of_wins2 += 1
-                        episode_actions_net1[len(episode_actions_net1)-1] = -1
+                        episode_rewards_net1[len(episode_rewards_net1)-1] = -1
                     elif reward < 0:
                         num_of_errors2 += 1
                     elif reward == 0:
@@ -210,10 +212,8 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
 
                 episode_states_net2.append(state)
                 episode_actions_net2.append(action)
-                if reward2!=0:
-                    episode_rewards_net2.append(reward2)
-                else:
-                    episode_rewards_net2.append(reward)
+                episode_rewards_net2.append(reward)
+
 
             
             steps += 1
@@ -223,9 +223,13 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
             if done:
                 break
         
+        print(episode_rewards_net1,episode_rewards_net2)
+        
         optimize(net1, optimizer1, episode_states_net1, episode_actions_net1, episode_rewards_net1)
 
         optimize(net2, optimizer2, episode_states_net2, episode_actions_net2, episode_rewards_net2)
+
+        
 
 def test1(net, num_episodes=10):
     for episode in range(num_episodes):
@@ -301,26 +305,26 @@ env = ticTacToe()
 
 scaler.fit([[1,2,0], [0,2,0], [1,0,2]])
 
-episodes = 10000
+episodes = 1000000000
 
 input_size = env.input_size
 output_size = env.output_size
 
-hidden_size1_1 = 9
+hidden_size1_1 = 16
 
-hidden_size1_2 = 128
-hidden_size2_2 = 64
-hidden_size3_2 = 64
+hidden_size1_2 = 42
+hidden_size2_2 = 21
+hidden_size3_2 = 21
 
-learning_rate = 0.001
+learning_rate = 0.01
 gamma = 0.99
 
-net1 = PolicyNetwork2(input_size, hidden_size1_2, hidden_size2_2, hidden_size3_2, output_size)
-optimizer1 = optim.Adam(net1.parameters(), lr=learning_rate)
+net1 = PolicyNetwork1(input_size, hidden_size1_1, output_size)
+optimizer1 = optim.Adadelta(net1.parameters())
 
 
-net2 = PolicyNetwork2(input_size, hidden_size1_2, hidden_size2_2, hidden_size3_2, output_size)
-optimizer2 = optim.Adam(net2.parameters(), lr=learning_rate)
+net2 = PolicyNetwork1(input_size, hidden_size1_1, output_size)
+optimizer2 = optim.Adadelta(net2.parameters())
 
 render = False
 
