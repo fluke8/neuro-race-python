@@ -76,7 +76,7 @@ class ticTacToe():
         row, col = self.positions[action]
 
         if self.state[row][col] == 0:
-            self.state[row][col] = 2
+            self.state[row][col] = -1
         else:
             done = True
             reward = -5  
@@ -85,7 +85,7 @@ class ticTacToe():
             done = True
             
 
-        if check_winner(self.state, 2):
+        if check_winner(self.state,-1):
             done = True
             reward = 1
         
@@ -157,7 +157,7 @@ def optimize(net, optimizer, episode_states, episode_actions, episode_rewards):
     optimizer.step()
 
 # Обучение агента
-def train(net1, optimizer1, net2, optimizer2, episodes):
+def train(net1, optimizer1, net2, optimizer2, episodes, hidden_size1):
     num_of_wins1, num_of_wins2 = 0, 0
     num_of_errors1, num_of_errors2 = 0, 0
     num_of_draws = 0
@@ -224,7 +224,9 @@ def train(net1, optimizer1, net2, optimizer2, episodes):
                 break
         
         print(episode_rewards_net1,episode_rewards_net2)
-        
+        if episode%500000 == 0:
+            torch.save(net1, f'net/tictactoe/tictactoe_net1_{hidden_size1}_{episode}.pth')
+            torch.save(net2, f'net/tictactoe/tictactoe_net2_{hidden_size1}_{episode}.pth')
         optimize(net1, optimizer1, episode_states_net1, episode_actions_net1, episode_rewards_net1)
 
         optimize(net2, optimizer2, episode_states_net2, episode_actions_net2, episode_rewards_net2)
@@ -303,7 +305,7 @@ scaler = StandardScaler()
 
 env = ticTacToe()
 
-scaler.fit([[1,2,0], [0,2,0], [1,0,2]])
+scaler.fit([[1,-1,0], [0,-1,0], [1,0,-1]])
 
 episodes = 1000000000
 
@@ -316,22 +318,21 @@ hidden_size1_2 = 42
 hidden_size2_2 = 21
 hidden_size3_2 = 21
 
-learning_rate = 0.01
+learning_rate = 0.001
 gamma = 0.99
 
 net1 = PolicyNetwork1(input_size, hidden_size1_1, output_size)
-optimizer1 = optim.Adadelta(net1.parameters())
+optimizer1 = optim.Adam(net1.parameters(), lr=learning_rate)
 
 
 net2 = PolicyNetwork1(input_size, hidden_size1_1, output_size)
-optimizer2 = optim.Adadelta(net2.parameters())
+optimizer2 = optim.Adam(net2.parameters(), lr=learning_rate)
 
 render = False
 
-train(net1, optimizer1, net2, optimizer2, episodes)
+train(net1, optimizer1, net2, optimizer2, episodes, hidden_size1_1)
 print('Обучение закончено')
-torch.save(net1, f'net/tictactoe_net1_{learning_rate}.pth')
-torch.save(net2, f'net/tictactoe_net2_{learning_rate}.pth')
+
 
 test1(net2)
 
