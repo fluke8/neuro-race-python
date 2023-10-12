@@ -66,40 +66,6 @@ def find_distance_to_intersection(intersection_points, car_x, car_y):
 
     return closest_distance, closest_intersection
 
-def is_point_inside_barriers(x, y, barriers):
-    num_intersections = 0
-    
-    for barrier in (barriers):
-        x1, y1, x2, y2 = barrier
-        
-        # Проверяем, пересекается ли луч с барьером
-        if ((y1 > y) != (y2 > y)) and (x < (x2 - x1) * (y - y1) / (y2 - y1) + x1):
-            num_intersections += 1
-    
-    # Если число пересечений нечетное, точка находится внутри зоны
-    return num_intersections % 2 == 1
-
-
-def is_point_outside_barriers(x,y, barriers):
-    for barrier in barriers:
-        x1, y1, x2, y2 = barrier
-        # Проверяем, лежит ли точка (x, y) между двумя точками линии
-        if not(x1 <= x <= x2 or x2 <= x <= x1) and not(y1 <= y <= y2 or y2 <= y <= y1):
-            print(-1)
-            return True
-    return False
-
-def is_point_inside_rectangle(x, y, rectangle):
-
-    x1, y1 = rectangle[0]
-    x2, y2 = rectangle[1]
-    x3, y3 = rectangle[2]
-    x4, y4 = rectangle[3]
-
-    is_inside_x = x1 <= x <= x3 
-    is_inside_y = y3 <= y <= y1 
-    return is_inside_x and is_inside_y
-
 class MyCarEnv(gym.Env):
     def __init__(self):
         self.action_space = spaces.Discrete(3)        
@@ -184,10 +150,6 @@ class MyCarEnv(gym.Env):
             if (intersection(x1, y1, x2, y2, self.car_x-15, self.car_y-15, self.car_x+15, self.car_y+15)) or (intersection(x1, y1, x2, y2, self.car_x-15, self.car_y+15, self.car_x+15, self.car_y-15)):
                 self.reward += -5
                 done = True
-        
-        if not(is_point_inside_rectangle(self.car_x, self.car_y, self.rect)):
-            self.reward += -5
-            done = True
 
         radians = math.radians(self.car_angle)
         position = Vector2(self.car_x, self.car_y)
