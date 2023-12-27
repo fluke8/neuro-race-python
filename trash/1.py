@@ -74,9 +74,13 @@ pygame.draw.circle(car_surface, car_color, (20,20), car_width)
 car_x = 369
 car_y = 537
 
-speed = 2   
-rotation_speed = 3  
-car_angle = 180  
+speed = 0  
+speed_change = 0
+speed_change_change = 0.0001
+speed_decrease = 0.00005
+rotation_speed = 0.2
+car_angle = 180 
+rotate_angle = 0 
 
 barrier_array = np.array([[20, 378, 64, 130], [64, 130, 445, 54], [445, 54, 856, 116], [856, 116, 1157, 307], [1157, 307, 1040, 649], [1040, 649, 689, 714], [689, 714, 460, 680], 
                           [460, 680, 187, 576], [20, 378, 187, 576],
@@ -88,7 +92,7 @@ reward_lines_array = np.array([[187, 576, 304, 415], [20, 378, 159, 344], [64, 1
 
 num_rays = 8
 ray_length = 5000
-
+drift_angle = -50
 
 clock = pygame.time.Clock()
 running = True
@@ -98,11 +102,10 @@ while running:
             running = False
     screen.fill(WHITE) 
 
-    radians = math.radians(car_angle)
-    position = Vector2(car_x, car_y)
-    direction = Vector2(math.cos(radians), -math.sin(radians))
-    position += direction * speed
-    car_x, car_y = position.x, position.y
+    new_x = car_x + speed * math.cos(math.radians(car_angle))
+    new_y = car_y - speed * math.sin(math.radians(car_angle))
+    car_x, car_y = new_x, new_y
+
 
 
 
@@ -115,21 +118,21 @@ while running:
                 end_xy[i][j] = car_y - ray_length * math.sin(math.radians(car_angle+i*360/num_rays))
             else:
                 end_xy[i][j] = car_x + ray_length * math.cos(math.radians(car_angle+i*360/num_rays))
-    #print(car_angle)
-
-
     
     for line in barrier_array:
         x1, y1, x2, y2 = line
-        # pygame.draw.line(screen, BLACK, (x1, y1), (x2, y2))
-        if (intersection(x1, y1, x2, y2, car_x-10, car_y-10, car_x+10, car_y+10)):
+        pygame.draw.line(screen, BLACK, (x1, y1), (x2, y2))
+        if (intersection(x1, y1, x2, y2, car_x-10, car_y-10, car_x+10, car_y+10)) or (intersection(x1, y1, x2, y2, car_x+10, car_y-10, car_x-10, car_y+10)):
             car_x, car_y = 369, 537
             car_angle = 180 
-            print(intersection(x1, y1, x2, y2, car_x, car_y, car_x+10, car_y+10))
+            speed = 0  
+            speed_change = 0
+            speed_change_change = 0.00001
+            speed_decrease = 0.000001
 
     for line in reward_lines_array:
         x1, y1, x2, y2 = line
-        #pygame.draw.line(screen, GREEN, (x1, y1), (x2, y2))
+        pygame.draw.line(screen, GREEN, (x1, y1), (x2, y2))
 
 
     pygame.draw.circle(screen, BLACK, (car_x, car_y), (10))
@@ -147,9 +150,7 @@ while running:
                 pygame.draw.line(screen, BLACK, (car_x, car_y), (int(closest_intersection[0]), int(closest_intersection[1])), 5)
             else:
                 pygame.draw.line(screen, BLACK, (car_x, car_y), (int(closest_intersection[0]), int(closest_intersection[1])), 1)
-
-
-    
+   
     distance_line_array = []
     for i in range(len(line_intersection_xy)):
         distance, closest_intersection = find_distance_to_intersection(line_intersection_xy[i], car_x, car_y)
@@ -159,28 +160,19 @@ while running:
             # Обработка случая, когда расстояние бесконечно или ближайшее пересечение отсутствует
             distance_line_array.append(None)
 
-
-
-    print(distance_line_array)
-
-    # for i, (end_x, end_y) in enumerate(end_xy):
-    #     if i == 0:
-    #         # Ваш код для первой итерации
-    #         pygame.draw.line(screen, BLACK, (car_x, car_y), (end_x, end_y), 3)
-    #     else:
-    #         # Ваш код для остальных итераций
-    #         pygame.draw.line(screen, BLACK, (car_x, car_y), (end_x, end_y), 1)
-    
-
     pygame.display.flip()
     
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        car_angle += rotation_speed  
-    if keys[pygame.K_RIGHT]:
-        car_angle -= rotation_speed  
+    if keys[pygame.K_LEFT] and rotate_angle < 5:
+        rotate_angle += rotation_speed  
+    if keys[pygame.K_RIGHT] and rotate_angle > -5:
+        rotate_angle -= rotation_speed 
+    if keys[pygame.K_UP] and speed < 5:
+        speed += speed_change_change  
+    if keys[pygame.K_DOWN] and speed > -5:
+        speed -= speed_change_change   
 
-
-
+    car_angle += rotate_angle
+    speed - speed_decrease
     clock.tick(60)
 pygame.quit()
